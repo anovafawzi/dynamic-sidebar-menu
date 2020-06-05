@@ -5,6 +5,7 @@ import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 import ExpandLessIcon from "@material-ui/icons/ExpandLess";
 import classNames from "classnames";
 import { cleanLabel } from "../helpers";
+import ISideMenuItem from "../interfaces/ISideMenuItem";
 
 // material-ui css-in-js
 const useStyles = makeStyles((theme: Theme) =>
@@ -35,13 +36,6 @@ const useStyles = makeStyles((theme: Theme) =>
 );
 
 // interfaces
-interface ISideMenuItem {
-  id: string;
-  isShowed: boolean;
-  isAllowed: boolean;
-  childs?: Array<ISideMenuItem>;
-}
-
 interface ISidebarItem {
   depthStep?: number;
   depth?: number;

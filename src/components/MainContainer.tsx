@@ -1,10 +1,17 @@
 import React from "react";
+import produce from "immer"
 import { createStyles, Theme, makeStyles } from "@material-ui/core/styles";
-import { CssBaseline, AppBar, Drawer, Typography } from "@material-ui/core";
+import {
+  CssBaseline,
+  Drawer,
+  Typography,
+} from "@material-ui/core";
+import { useDispatch, useSelector } from "react-redux";
 import Sidebar from "./Sidebar";
+import SettingList from "./SettingList";
+import { setSidebarItems } from "../actions/sidebar";
 
 import avaHolder from "../assets/img/avana-holder.png";
-import sidemenuconfig from "../configs/sidemenu.json";
 
 const drawerWidth = 255;
 
@@ -39,11 +46,10 @@ const useStyles = makeStyles((theme: Theme) =>
       backgroundColor: "#1D1D1D",
       color: "rgba(255,255,255,0.9)",
     },
-    // necessary for content to be below app bar
-    toolbar: theme.mixins.toolbar,
     contentTitle: {
       color: "white",
       fontWeight: "bold",
+      marginBottom: 20,
     },
     content: {
       flexGrow: 1,
@@ -51,22 +57,57 @@ const useStyles = makeStyles((theme: Theme) =>
       padding: theme.spacing(3),
       height: "100%",
     },
+    settingList: {
+      maxWidth: 560,
+      width: "100%",
+      backgroundColor: theme.palette.background.paper,
+    },
+    settingText: {
+      marginLeft: 15,
+    },
   })
 );
 
 const MainContainer = () => {
   const classes = useStyles();
+  const dispatch = useDispatch();
+  const sidemenuconfig = useSelector((state) => state.sidebar.sidebarItems);
+
+  const updateSidebarItems = (parentItemId, itemId, itemToUpdate) => {
+    if (parentItemId === itemId) {
+      // if top level
+      const copySidebarItems = produce(sidemenuconfig, draftState => {
+        const findIndex = draftState.findIndex(x => x.id === itemId);
+        if (findIndex !== -1) {
+          draftState[findIndex] = { ...draftState[findIndex], ...itemToUpdate };
+        }
+      });
+      // update redux state
+      dispatch(setSidebarItems(copySidebarItems));
+    } else {
+      // if child level
+      console.log(itemToUpdate);
+      const copySidebarItems = produce(sidemenuconfig, draftState => {
+        draftState.forEach(function iter(a) {
+          if(a.id === itemId) {
+            if (itemToUpdate.hasOwnProperty("isShowed")) {
+              a.isShowed = itemToUpdate.isShowed;
+            }
+            if (itemToUpdate.hasOwnProperty("isAllowed")) {
+              a.isAllowed = itemToUpdate.isAllowed;
+            }
+          }
+          Array.isArray(a.childs) && a.childs.forEach(iter);
+        });
+      });
+      // update redux state
+      dispatch(setSidebarItems(copySidebarItems));
+    }
+  }
 
   return (
     <div className={classes.root}>
       <CssBaseline />
-      <AppBar position="fixed" className={classes.appBar}>
-        {/* <Toolbar>
-          <Typography variant="h6" noWrap>
-            Permanent drawer
-          </Typography>
-        </Toolbar> */}
-      </AppBar>
       <Drawer
         className={classes.drawer}
         variant="permanent"
@@ -79,44 +120,18 @@ const MainContainer = () => {
         <div className={classes.avatarText}>Anova Fawzi</div>
         <Sidebar
           items={sidemenuconfig}
-          onClick={(item) => alert(JSON.stringify(item, null, 2))}
+          onClick={(item) => console.log(JSON.stringify(item, null, 2))}
         />
       </Drawer>
       <main className={classes.content}>
-        {/* <div className={classes.toolbar} /> */}
-        <Typography variant="h6" noWrap className={classes.contentTitle}>
+        <Typography variant="h4" noWrap className={classes.contentTitle}>
           Side menu settings
         </Typography>
-        <Typography paragraph>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-          eiusmod tempor incididunt ut labore et dolore magna aliqua. Rhoncus
-          dolor purus non enim praesent elementum facilisis leo vel. Risus at
-          ultrices mi tempus imperdiet. Semper risus in hendrerit gravida rutrum
-          quisque non tellus. Convallis convallis tellus id interdum velit
-          laoreet id donec ultrices. Odio morbi quis commodo odio aenean sed
-          adipiscing. Amet nisl suscipit adipiscing bibendum est ultricies
-          integer quis. Cursus euismod quis viverra nibh cras. Metus vulputate
-          eu scelerisque felis imperdiet proin fermentum leo. Mauris commodo
-          quis imperdiet massa tincidunt. Cras tincidunt lobortis feugiat
-          vivamus at augue. At augue eget arcu dictum varius duis at consectetur
-          lorem. Velit sed ullamcorper morbi tincidunt. Lorem donec massa sapien
-          faucibus et molestie ac.
-        </Typography>
-        <Typography paragraph>
-          Consequat mauris nunc congue nisi vitae suscipit. Fringilla est
-          ullamcorper eget nulla facilisi etiam dignissim diam. Pulvinar
-          elementum integer enim neque volutpat ac tincidunt. Ornare suspendisse
-          sed nisi lacus sed viverra tellus. Purus sit amet volutpat consequat
-          mauris. Elementum eu facilisis sed odio morbi. Euismod lacinia at quis
-          risus sed vulputate odio. Morbi tincidunt ornare massa eget egestas
-          purus viverra accumsan in. In hendrerit gravida rutrum quisque non
-          tellus orci ac. Pellentesque nec nam aliquam sem et tortor. Habitant
-          morbi tristique senectus et. Adipiscing elit duis tristique
-          sollicitudin nibh sit. Ornare aenean euismod elementum nisi quis
-          eleifend. Commodo viverra maecenas accumsan lacus vel facilisis. Nulla
-          posuere sollicitudin aliquam ultrices sagittis orci a.
-        </Typography>
-        <pre>{JSON.stringify(sidemenuconfig, null, 2)}</pre>
+        
+        <SettingList
+          items={sidemenuconfig}
+          onClick={(parentItemId, itemId, item) => updateSidebarItems(parentItemId, itemId, item)}
+        />
       </main>
     </div>
   );
